@@ -119,7 +119,6 @@ while cap.isOpened():
                 data.append(x[i])
                 data.append(y[i])
             recognizedHandGesture = recognizeHandGesture(getStructuredLandmarks(data))
-            print("recognized hand gesture: ", recognizedHandGesture)
             if recognizedHandGesture == 1:
                 text = "ONE"
             elif recognizedHandGesture == 2:
