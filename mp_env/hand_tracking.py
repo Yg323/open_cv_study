@@ -6,7 +6,6 @@ mp_hands = mp.solutions.hands
 
 
 def recognize_gesture(landmarks):
-    print(landmarks)
     fingers = ['UNKNOWN', 'UNKNOWN', 'UNKNOWN', 'UNKNOWN', 'UNKNOWN']
 
     pseudoFixKeyPoint = landmarks[2]['x']
@@ -58,15 +57,17 @@ def getStructuredLandmarks(landmarks):
     return structuredLandmarks
 
 
-# f = open('C:/Users/14dnf/Desktop','w')
-flags = 0
+#f = open('C:/Users/14dnf/Desktop/hand_data/user23.csv', 'w')
+
+msec = 0
 sec = "0"
 hands = mp_hands.Hands(
-    min_detection_confidence=0.5, max_num_hands=2, min_tracking_confidence=0.5)
-cap = cv2.VideoCapture(0)
+    min_detection_confidence=0.7, max_num_hands=2, min_tracking_confidence=0.7)
+cap = cv2.VideoCapture(1)
 while cap.isOpened():
-    if flags == 100: flags = 0
+    if msec >= 100: msec = 0
     success, image = cap.read()
+    image = cv2.resize(image, dsize=(960, 720), interpolation=cv2.INTER_AREA)
     if not success:
         print("Ignoring empty camera frame.")
         continue
@@ -83,7 +84,7 @@ while cap.isOpened():
             handedness.classification[0].label
             for handedness in results.multi_handedness
         ]
-
+    hand_information = str(len(handedness))
     if results.multi_hand_landmarks:
         flag = 0
         for hand_landmarks in results.multi_hand_landmarks:
@@ -93,9 +94,11 @@ while cap.isOpened():
 
             x = [landmark.x for landmark in hand_landmarks.landmark]
             y = [landmark.y for landmark in hand_landmarks.landmark]
+            z = [landmark.z for landmark in hand_landmarks.landmark]
             for i in range(21):
                 data.append(x[i])
                 data.append(y[i])
+                hand_information += "," + str(x[i] * 960) + "," + str(y[i] * 720) + "," + str(z[i])
             recognizedHandGesture = recognize_gesture(getStructuredLandmarks(data))
             if recognizedHandGesture == 1:
                 text = "ONE"
@@ -109,17 +112,20 @@ while cap.isOpened():
                 text = "FIVE"
             else:
                 text = "ZERO"
-            cv2.putText(image, handedness[flag] + " Hand : " + text, (int(x[12] * 360), int(y[12] * 360)),
+            cv2.putText(image, handedness[flag] + " Hand : " + text, (int(min(x) * 960), int(min(y) * 720) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, lineType=cv2.LINE_AA)
-            flags += 1
-    if flags % 10 == 0:
-        sec = str(flags // 10)
+            hand_information += "," + handedness[flag] + "," + text
+            flag += 1
+        msec += 1
+    if msec % 10 == 0:
+        sec = str(msec // 10)
     cv2.putText(image, sec, (10, 20),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1)
-
+    cv2.moveWindow('OPEN_CV_HAND', 200, 100)
     cv2.imshow('OPEN_CV_HAND', image)
-
+    #f.write(str(msec) + "," + hand_information + "\n")
     if cv2.waitKey(5) & 0xFF == 27:
         break
+#f.close()
 hands.close()
 cap.release()
